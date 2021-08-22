@@ -1,0 +1,140 @@
+<html>
+
+<head>
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+</head>
+
+<body>
+    <div id="app">
+        <el-header>
+            <el-menu class="el-menu-demo" mode="horizontal" @select="handleSelect" background-color="#545c64"
+                text-color="#fff" active-text-color="#ffd04b">
+                <el-menu-item index="1">Docker</el-menu-item>
+                <el-menu-item index="2">Mysql</el-menu-item>
+                <el-menu-item index="3">Redis</el-menu-item>
+                <el-menu-item index="4">MongoDB</el-menu-item>
+                <el-menu-item index="4">Nginx</el-menu-item>
+            </el-menu>
+        </el-header>
+        <el-container>
+            <el-main>
+            <template>
+                <el-tabs>
+                    <el-tab-pane label="Info" name="first">
+
+                    </el-tab-pane>
+                    <el-tab-pane label="Image" name="second">
+                        <el-table stripe :data="images" style="width: 100%">
+                            <el-table-column prop="Name" label="REPOSITORY" width="400">
+                            </el-table-column>
+                            <el-table-column prop="Tag" label="TAG" width="180">
+                            </el-table-column>
+                            <el-table-column prop="ID" label="IMAGE ID">
+                            </el-table-column>
+                            <el-table-column prop="Time" label="CREATED">
+                            </el-table-column>
+                            <el-table-column prop="Size" label="SIZE">
+                            </el-table-column>
+                            <el-table-column label="操作">
+                                <template slot-scope="scope">
+                                    <el-button size="mini" @click="handleEdit(scope.$index, scope.row)">编辑</el-button>
+                                    <el-button size="mini" type="danger" @click="handleDelete(scope.$index, scope.row)">删除
+                                    </el-button>
+                                </template>
+                            </el-table-column>
+                        </el-table>
+                    </el-tab-pane>
+                    <el-tab-pane label="Contain" name="third">
+                        <el-table stripe :data="contains" style="width: 100%">
+                            <el-table-column prop="ID" label="ID">
+                            </el-table-column>
+                            <el-table-column prop="Name" label="Name">
+                            </el-table-column>
+                            <el-table-column prop="Image" label="Image" width="180">
+                            </el-table-column>
+                            <el-table-column prop="Time" label="CREATED">
+                            </el-table-column>
+                            <el-table-column prop="State" label="State">
+                            </el-table-column>
+                            <el-table-column prop="Status" label="Status">
+                            </el-table-column>
+                            <el-table-column label="操作">
+                                <template slot-scope="scope">
+                                    <el-button size="mini" @click="openlog(scope.row.ID)" >log</el-button>
+                                    <el-button size="mini" @click="openinspect(scope.row.ID)" >inspect</el-button>
+                                    <el-button size="mini" @click="handleEdit(scope.$index, scope.row)">编辑</el-button>
+                                    <el-button size="mini" @click="stopContainer(scope.$index, scope.row)">Stop</el-button>
+                                    <el-button size="mini" type="danger" @click="handleDelete(scope.$index, scope.row)">删除
+                                    </el-button>
+                                </template>
+                            </el-table-column>
+                        </el-table>
+                    </el-tab-pane>
+                    <el-tab-pane label="其他" name="fourth">
+
+                    </el-tab-pane>
+                </el-tabs>
+            </template>
+
+            </el-main>
+        </el-container>
+    </div>
+    <script>
+        var app = new Vue({
+            el: '#app',
+            data: {
+                tab: 1,
+                log:"",
+                images: [],
+                contains:[]
+            },
+            created: function () {
+                this.loadImage();
+                this.loadContainer();
+            },
+            methods: {
+                handleSelect(key, keyPath) {
+                    console.log(key, keyPath);
+                },
+                loadImage() {
+                    v = this;
+                    axios.get('/docker/image')
+                        .then(response => {
+                            v.images = response.data
+                        });
+                },
+                loadContainer(){
+                    v = this;
+                    axios.get('/docker/container')
+                        .then(response => {
+                            v.contains = response.data
+                        });
+                },
+                openlog(id){
+                    window.open("/docker/container/log/"+ id);
+                },
+                openinspect(id){
+                    window.open("/docker/container/inspect/"+ id);
+                },
+                stopContainer(index, row){
+                    v = this;
+                    axios.get('/docker/container/stop/'+ row.ID)
+                        .then(response => {
+                            v.contains = response.data
+                        });
+                },
+                deleteImage(){
+                    axios.delete('/docker/container')
+                        .then(response => {
+                            v.contains = response.data
+                        });
+                }
+            }
+        })
+    </script>
+</body>
+
+</html>
