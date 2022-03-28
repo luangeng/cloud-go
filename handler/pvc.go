@@ -3,6 +3,7 @@ package handler
 import (
 	. "cloud/model"
 	pv "cloud/vender/k8s"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -26,4 +27,30 @@ func ListPv(c *gin.Context) {
 func ListPvDetail(c *gin.Context) {
 	var z = pv.ListPv("default")
 	c.JSON(200, z)
+}
+
+func CreatePvc(c *gin.Context) {
+	var param Pvc
+	err := c.BindJSON(&param)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, "bad request")
+		return
+	}
+	pv.CreatePvc(param)
+	c.JSON(200, gin.H{
+		"message": "ok",
+	})
+}
+
+func DeletePvc(c *gin.Context) {
+	var param Pvc
+	err := c.BindJSON(&param)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, "bad request")
+		return
+	}
+	pv.DeletePvc(param)
+	c.JSON(200, gin.H{
+		"message": "ok",
+	})
 }

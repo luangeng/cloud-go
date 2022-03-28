@@ -10,7 +10,33 @@ import (
 	"k8s.io/client-go/util/retry"
 )
 
-func Create() {
+func CreateDeploy() {
+	var envs []apiv1.EnvVar
+	envs = append(envs, apiv1.EnvVar{Name: "test", Value: "123"})
+
+	var ports []apiv1.ContainerPort
+	ports = append(ports, apiv1.ContainerPort{
+		Name:          "http",
+		Protocol:      apiv1.ProtocolTCP,
+		ContainerPort: 80,
+	})
+
+	var volumes []apiv1.Volume
+	volumes = append(volumes, apiv1.Volume{
+		Name: "mypv",
+		VolumeSource: apiv1.VolumeSource{
+			PersistentVolumeClaim: &apiv1.PersistentVolumeClaimVolumeSource{
+				ClaimName: "myclaim",
+			},
+		},
+	})
+
+	var volumeMounts []apiv1.VolumeMount
+	volumeMounts = append(volumeMounts, apiv1.VolumeMount{
+		Name:      "mypv",
+		MountPath: "/mypv",
+	})
+
 	deploymentsClient := GetClient().AppsV1().Deployments(apiv1.NamespaceDefault)
 
 	deployment := &appsv1.Deployment{
@@ -33,17 +59,15 @@ func Create() {
 				Spec: apiv1.PodSpec{
 					Containers: []apiv1.Container{
 						{
-							Name:  "web",
-							Image: "nginx:1.12",
-							Ports: []apiv1.ContainerPort{
-								{
-									Name:          "http",
-									Protocol:      apiv1.ProtocolTCP,
-									ContainerPort: 80,
-								},
-							},
+							Name:            "web",
+							Image:           "luangeng/tool",
+							ImagePullPolicy: "IfNotPresent",
+							Ports:           ports,
+							Env:             envs,
+							VolumeMounts:    volumeMounts,
 						},
 					},
+					Volumes: volumes,
 				},
 			},
 		},
@@ -59,7 +83,6 @@ func Create() {
 }
 
 func ListDeploy(ns string) []appsv1.Deployment {
-	// List Deployments
 	deploymentsClient := GetClient().AppsV1().Deployments(apiv1.NamespaceDefault)
 	fmt.Printf("Listing deployments in namespace %q:\n", apiv1.NamespaceDefault)
 	list, err := deploymentsClient.List(context.TODO(), metav1.ListOptions{})
@@ -72,8 +95,7 @@ func ListDeploy(ns string) []appsv1.Deployment {
 	return list.Items
 }
 
-func Delete() {
-	// Delete Deployment
+func DeleteDeploy() {
 	deploymentsClient := GetClient().AppsV1().Deployments(apiv1.NamespaceDefault)
 	fmt.Println("Deleting deployment...")
 	deletePolicy := metav1.DeletePropagationForeground
@@ -85,32 +107,16 @@ func Delete() {
 	fmt.Println("Deleted deployment.")
 }
 
-func UpdateDeployment() {
+func UpdateDeploy() {
 	deploymentsClient := GetClient().AppsV1().Deployments(apiv1.NamespaceDefault)
 	fmt.Println("Updating deployment...")
-	//    You have two options to Update() this Deployment:
-	//
-	//    1. Modify the "deployment" variable and call: Update(deployment).
-	//       This works like the "kubectl replace" command and it overwrites/loses changes
-	//       made by other clients between you Create() and Update() the object.
-	//    2. Modify the "result" returned by Get() and retry Update(result) until
-	//       you no longer get a conflict error. This way, you can preserve changes made
-	//       by other clients between Create() and Update(). This is implemented below
-	//			 using the retry utility package included with client-go. (RECOMMENDED)
-	//
-	// More Info:
-	// https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
-
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		// Retrieve the latest version of Deployment before attempting update
-		// RetryOnConflict uses exponential backoff to avoid exhausting the apiserver
 		result, getErr := deploymentsClient.Get(context.TODO(), "demo-deployment", metav1.GetOptions{})
 		if getErr != nil {
 			panic(fmt.Errorf("Failed to get latest version of Deployment: %v", getErr))
 		}
 
-		result.Spec.Replicas = int32Ptr(1)                           // reduce replica count
-		result.Spec.Template.Spec.Containers[0].Image = "nginx:1.13" // change nginx version
+		result.Spec.Replicas = int32Ptr(1)
 		_, updateErr := deploymentsClient.Update(context.TODO(), result, metav1.UpdateOptions{})
 		return updateErr
 	})
@@ -120,16 +126,9 @@ func UpdateDeployment() {
 	fmt.Println("Updated deployment...")
 }
 
-// func prompt() {
-// 	fmt.Printf("-> Press Return key to continue.")
-// 	scanner := bufio.NewScanner(os.Stdin)
-// 	for scanner.Scan() {
-// 		break
-// 	}
-// 	if err := scanner.Err(); err != nil {
-// 		panic(err)
-// 	}
-// 	fmt.Println()
+// func Scale(name string, count int) {
+// 	deploymentsClient := GetClient().AppsV1().Deployments(apiv1.NamespaceDefault)
+// 	deploymentsClient.ApplyScale(context.TODO(), name, nil, metav1.ApplyOptions{})
 // }
 
 func int32Ptr(i int32) *int32 { return &i }
