@@ -74,7 +74,6 @@ func CreateDeploy() {
 	}
 
 	// Create Deployment
-	fmt.Println("Creating deployment...")
 	result, err := deploymentsClient.Create(context.TODO(), deployment, metav1.CreateOptions{})
 	if err != nil {
 		panic(err)
@@ -83,28 +82,22 @@ func CreateDeploy() {
 }
 
 func ListDeploy(ns string) []appsv1.Deployment {
-	deploymentsClient := GetClient().AppsV1().Deployments(apiv1.NamespaceDefault)
-	fmt.Printf("Listing deployments in namespace %q:\n", apiv1.NamespaceDefault)
+	deploymentsClient := GetClient().AppsV1().Deployments(ns)
 	list, err := deploymentsClient.List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		panic(err)
 	}
-	for _, d := range list.Items {
-		fmt.Printf(" * %s (%d replicas)\n", d.Name, *d.Spec.Replicas)
-	}
 	return list.Items
 }
 
-func DeleteDeploy() {
-	deploymentsClient := GetClient().AppsV1().Deployments(apiv1.NamespaceDefault)
-	fmt.Println("Deleting deployment...")
+func DeleteDeploy(ns string, name string) {
+	deploymentsClient := GetClient().AppsV1().Deployments(ns)
 	deletePolicy := metav1.DeletePropagationForeground
-	if err := deploymentsClient.Delete(context.TODO(), "demo-deployment", metav1.DeleteOptions{
+	if err := deploymentsClient.Delete(context.TODO(), name, metav1.DeleteOptions{
 		PropagationPolicy: &deletePolicy,
 	}); err != nil {
 		panic(err)
 	}
-	fmt.Println("Deleted deployment.")
 }
 
 func UpdateDeploy() {
@@ -123,12 +116,6 @@ func UpdateDeploy() {
 	if retryErr != nil {
 		panic(fmt.Errorf("Update failed: %v", retryErr))
 	}
-	fmt.Println("Updated deployment...")
 }
-
-// func Scale(name string, count int) {
-// 	deploymentsClient := GetClient().AppsV1().Deployments(apiv1.NamespaceDefault)
-// 	deploymentsClient.ApplyScale(context.TODO(), name, nil, metav1.ApplyOptions{})
-// }
 
 func int32Ptr(i int32) *int32 { return &i }

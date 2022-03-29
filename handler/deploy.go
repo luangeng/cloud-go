@@ -14,17 +14,19 @@ func CreateDeploy(c *gin.Context) {
 }
 
 func ListDeploy(c *gin.Context) {
-	var z = deploy.ListDeploy("default")
-	c.JSON(200, z)
+	var list = deploy.ListDeploy("default")
+	c.JSON(200, list)
 }
 
 func ListDeployDetail(c *gin.Context) {
-	var z = deploy.ListDeploy("default")
-	c.JSON(200, z)
+	var list = deploy.ListDeploy("default")
+	c.JSON(200, list)
 }
 
 func DeleteDeploy(c *gin.Context) {
-	deploy.DeleteDeploy()
+	ns := c.Query("namespace")
+	name := c.Query("name")
+	deploy.DeleteDeploy(ns, name)
 	c.JSON(200, gin.H{
 		"message": "ok",
 	})

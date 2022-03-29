@@ -1,7 +1,6 @@
 package main
 
 import (
-	// "cloud/handler"
 	"net/http"
 
 	handler "cloud/handler"
@@ -46,11 +45,12 @@ func main() {
 		}
 		g2 := cloud.Group("/pod")
 		{
-			g2.GET("/", vvv)
+			g2.GET("/", handler.ListPod)
+			g2.POST("/", handler.CreatePod)
+			g2.DELETE("/", handler.DeletePod)
 		}
 		g3 := cloud.Group("/service")
 		{
-
 			g3.GET("/", handler.ListService)
 			g3.POST("/", handler.CreateService)
 			g3.DELETE("/", handler.DeleteService)
@@ -69,6 +69,12 @@ func main() {
 			g5.POST("/", handler.CreateDeploy)
 			g5.DELETE("/", handler.DeleteDeploy)
 		}
+		g7 := cloud.Group("/statefulset")
+		{
+			g7.GET("/", handler.ListStateful)
+			g7.POST("/", handler.CreateStateful)
+			g7.DELETE("/", handler.DeleteStateful)
+		}
 
 	}
 
@@ -84,10 +90,4 @@ func main() {
 
 	r.Run()
 
-}
-
-func vvv(c *gin.Context) {
-	c.JSON(200, gin.H{
-		"message": "ok",
-	})
 }

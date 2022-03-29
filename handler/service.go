@@ -9,7 +9,8 @@ import (
 )
 
 func ListService(c *gin.Context) {
-	k8s.ListService("default")
+	ns := c.Query("namespace")
+	k8s.ListService(ns)
 	c.JSON(200, gin.H{
 		"message": "ok",
 	})
@@ -29,7 +30,9 @@ func CreateService(c *gin.Context) {
 }
 
 func DeleteService(c *gin.Context) {
-	k8s.DeleteService("default", "test")
+	ns := c.Query("namespace")
+	name := c.Query("name")
+	k8s.DeleteService(ns, name)
 	c.JSON(200, gin.H{
 		"message": "ok",
 	})
