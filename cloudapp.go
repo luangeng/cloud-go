@@ -33,6 +33,8 @@ func main() {
 
 	cloud := r.Group("/cloud")
 	{
+		cloud.GET("/ws", handler.WebSocket)
+
 		g1 := cloud.Group("/node")
 		{
 			g1.GET("/s", handler.ListNode)
@@ -48,6 +50,7 @@ func main() {
 			g2.GET("/", handler.ListPod)
 			g2.POST("/", handler.CreatePod)
 			g2.DELETE("/", handler.DeletePod)
+			g2.GET("/log", handler.LogPod)
 		}
 		g3 := cloud.Group("/service")
 		{
@@ -75,7 +78,6 @@ func main() {
 			g7.POST("/", handler.CreateStateful)
 			g7.DELETE("/", handler.DeleteStateful)
 		}
-
 	}
 
 	r.GET("/test", handler.Test)

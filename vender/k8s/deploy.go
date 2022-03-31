@@ -1,6 +1,7 @@
 package k8s
 
 import (
+	"cloud/model"
 	"context"
 	"fmt"
 
@@ -10,32 +11,53 @@ import (
 	"k8s.io/client-go/util/retry"
 )
 
-func CreateDeploy() {
-	var envs []apiv1.EnvVar
-	envs = append(envs, apiv1.EnvVar{Name: "test", Value: "123"})
+func CreateDeploy(d model.Deploy1) {
+	var containers []apiv1.Container
+	for _, c := range d.Containers {
 
-	var ports []apiv1.ContainerPort
-	ports = append(ports, apiv1.ContainerPort{
-		Name:          "http",
-		Protocol:      apiv1.ProtocolTCP,
-		ContainerPort: 80,
-	})
+		var envs []apiv1.EnvVar
+		for _, env := range c.Envs {
+			envs = append(envs, apiv1.EnvVar{Name: env.Key, Value: env.Value})
+		}
+
+		var ports []apiv1.ContainerPort
+		for _, port := range c.Ports {
+			ports = append(ports, apiv1.ContainerPort{
+				Name:          port.Name,
+				Protocol:      apiv1.ProtocolTCP,
+				ContainerPort: int32(port.ContainerPort),
+			})
+		}
+
+		var volumeMounts []apiv1.VolumeMount
+		for _, v := range c.VolumeMounts {
+			volumeMounts = append(volumeMounts, apiv1.VolumeMount{
+				Name:      v.Name,
+				MountPath: v.Path,
+			})
+		}
+
+		containers = append(containers, apiv1.Container{
+			Name:            c.Name,
+			Image:           c.Image,
+			ImagePullPolicy: "IfNotPresent",
+			Ports:           ports,
+			Env:             envs,
+			VolumeMounts:    volumeMounts,
+		})
+	}
 
 	var volumes []apiv1.Volume
-	volumes = append(volumes, apiv1.Volume{
-		Name: "mypv",
-		VolumeSource: apiv1.VolumeSource{
-			PersistentVolumeClaim: &apiv1.PersistentVolumeClaimVolumeSource{
-				ClaimName: "myclaim",
+	for _, v := range d.Volumes {
+		volumes = append(volumes, apiv1.Volume{
+			Name: v.Name,
+			VolumeSource: apiv1.VolumeSource{
+				PersistentVolumeClaim: &apiv1.PersistentVolumeClaimVolumeSource{
+					ClaimName: v.ClaimName,
+				},
 			},
-		},
-	})
-
-	var volumeMounts []apiv1.VolumeMount
-	volumeMounts = append(volumeMounts, apiv1.VolumeMount{
-		Name:      "mypv",
-		MountPath: "/mypv",
-	})
+		})
+	}
 
 	deploymentsClient := GetClient().AppsV1().Deployments(apiv1.NamespaceDefault)
 
@@ -57,23 +79,13 @@ func CreateDeploy() {
 					},
 				},
 				Spec: apiv1.PodSpec{
-					Containers: []apiv1.Container{
-						{
-							Name:            "web",
-							Image:           "luangeng/tool",
-							ImagePullPolicy: "IfNotPresent",
-							Ports:           ports,
-							Env:             envs,
-							VolumeMounts:    volumeMounts,
-						},
-					},
-					Volumes: volumes,
+					Containers: containers,
+					Volumes:    volumes,
 				},
 			},
 		},
 	}
 
-	// Create Deployment
 	result, err := deploymentsClient.Create(context.TODO(), deployment, metav1.CreateOptions{})
 	if err != nil {
 		panic(err)

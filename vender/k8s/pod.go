@@ -1,15 +1,21 @@
 package k8s
 
 import (
+	"bufio"
+	"bytes"
+	model "cloud/model"
 	"context"
 	"fmt"
+	"io"
 
+	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func ListPod() []v1.Pod {
-	pods, err := GetClient().CoreV1().Pods("default").List(context.TODO(), metav1.ListOptions{})
+func ListPod(ns string) []v1.Pod {
+	pods, err := GetClient().CoreV1().Pods(ns).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		panic(err.Error())
 	}
@@ -34,28 +40,54 @@ func ListPod() []v1.Pod {
 	// }
 }
 
-func CretaePod() {
-	pod := &v1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "demo",
-			Labels: map[string]string{
-				"app": "demo",
-			},
-		},
-		Spec: v1.PodSpec{
-			Containers: []v1.Container{
-				{
-					Image:           "",
-					Name:            "",
-					ImagePullPolicy: v1.PullIfNotPresent,
+func CreatePod(pod0 model.Pod) error {
+	var containers []v1.Container
+	for _, c := range pod0.Containers {
+		var envs []apiv1.EnvVar
+		for _, env := range c.Envs {
+			envs = append(envs, apiv1.EnvVar{Name: env.Key, Value: env.Value})
+		}
+
+		var ports []apiv1.ContainerPort
+		for _, p := range c.Ports {
+			ports = append(ports, apiv1.ContainerPort{Name: p.Name, ContainerPort: int32(p.ContainerPort)})
+		}
+
+		var volumeMounts []apiv1.VolumeMount
+		for _, v := range c.VolumeMounts {
+			volumeMounts = append(volumeMounts, apiv1.VolumeMount{Name: v.Name, MountPath: v.Path})
+		}
+
+		containers = append(containers, v1.Container{
+			Name:            c.Name,
+			Image:           c.Image,
+			ImagePullPolicy: v1.PullIfNotPresent,
+			Env:             envs,
+			Ports:           ports,
+			VolumeMounts:    volumeMounts,
+			Resources: apiv1.ResourceRequirements{
+				Requests: apiv1.ResourceList{
+					apiv1.ResourceName(apiv1.ResourceCPU):    resource.MustParse("200m"),
+					apiv1.ResourceName(apiv1.ResourceMemory): resource.MustParse("100Mi"),
 				},
 			},
+		})
+	}
+
+	pod := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   pod0.Name,
+			Labels: model.Labels2map(pod0.Labels),
+		},
+		Spec: v1.PodSpec{
+			Containers: containers,
 		},
 	}
 	_, err := GetClient().CoreV1().Pods("default").Create(context.TODO(), pod, metav1.CreateOptions{})
 	if err != nil {
-		panic(err.Error())
+		return err
 	}
+	return nil
 }
 
 func DeletePod(ns string, name string) {
@@ -63,4 +95,82 @@ func DeletePod(ns string, name string) {
 	if err != nil {
 		panic(err.Error())
 	}
+}
+
+func LogPod() string {
+	req := GetClient().CoreV1().Pods("default").GetLogs("demo-0", &v1.PodLogOptions{Follow: true})
+	podLogs, err := req.Stream(context.TODO())
+	if err != nil {
+		return "error in opening stream"
+	}
+	defer podLogs.Close()
+
+	buf := new(bytes.Buffer)
+	_, err = io.Copy(buf, podLogs)
+	if err != nil {
+		return "error in copy information from podLogs to buf"
+	}
+	str := buf.String()
+
+	return str
+}
+
+func LogPodFollow(ctx context.Context, ch chan string) {
+	defer close(ch)
+	podLogOpts := v1.PodLogOptions{}
+	podLogOpts.Follow = true
+	podLogOpts.TailLines = &[]int64{int64(2000)}[0]
+	podLogOpts.Container = "web"
+	req := GetClient().CoreV1().Pods("default").GetLogs("demo-0", &podLogOpts)
+	podLogs, err := req.Stream(ctx)
+	if err != nil {
+		fmt.Printf(err.Error())
+		ch <- err.Error()
+		return
+	}
+	defer podLogs.Close()
+
+	reader := bufio.NewScanner(podLogs)
+	for reader.Scan() {
+		line := reader.Text()
+		ch <- line
+	}
+}
+
+func ExecPod() {
+	// cmd := []string{
+	// 	"sh",
+	// 	"-c",
+	// 	"clear; (bash || ash || sh)",
+	// }
+	// req := GetClient.CoreV1().RESTClient().Post().Resource("pods").Name(podName).
+	// 	Namespace("default").SubResource("exec")
+	// option := &v1.PodExecOptions{
+	// 	Command: cmd,
+	// 	Stdin:   true,
+	// 	Stdout:  true,
+	// 	Stderr:  true,
+	// 	TTY:     true,
+	// }
+	// if stdin == nil {
+	// 	option.Stdin = false
+	// }
+	// req.VersionedParams(
+	// 	option,
+	// 	scheme.ParameterCodec,
+	// )
+	// exec, err := remotecommand.NewSPDYExecutor(config, "POST", req.URL())
+	// if err != nil {
+	// 	return err
+	// }
+	// err = exec.Stream(remotecommand.StreamOptions{
+	// 	Stdin:  stdin,
+	// 	Stdout: stdout,
+	// 	Stderr: stderr,
+	// })
+	// if err != nil {
+	// 	return err
+	// }
+
+	// return nil
 }

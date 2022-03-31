@@ -1,13 +1,21 @@
 package handler
 
 import (
+	model "cloud/model"
 	deploy "cloud/vender/k8s"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
 func CreateDeploy(c *gin.Context) {
-	deploy.CreateDeploy()
+	var param model.Deploy1
+	err := c.BindJSON(&param)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, "bad request")
+		return
+	}
+	deploy.CreateDeploy(param)
 	c.JSON(200, gin.H{
 		"message": "ok",
 	})
