@@ -7,11 +7,15 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 
 	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/remotecommand"
 )
 
 func ListPod(ns string) []v1.Pod {
@@ -137,40 +141,65 @@ func LogPodFollow(ctx context.Context, ch chan string) {
 	}
 }
 
-func ExecPod() {
-	// cmd := []string{
-	// 	"sh",
-	// 	"-c",
-	// 	"clear; (bash || ash || sh)",
-	// }
-	// req := GetClient.CoreV1().RESTClient().Post().Resource("pods").Name(podName).
-	// 	Namespace("default").SubResource("exec")
-	// option := &v1.PodExecOptions{
-	// 	Command: cmd,
-	// 	Stdin:   true,
-	// 	Stdout:  true,
-	// 	Stderr:  true,
-	// 	TTY:     true,
-	// }
-	// if stdin == nil {
-	// 	option.Stdin = false
-	// }
-	// req.VersionedParams(
-	// 	option,
-	// 	scheme.ParameterCodec,
-	// )
-	// exec, err := remotecommand.NewSPDYExecutor(config, "POST", req.URL())
-	// if err != nil {
-	// 	return err
-	// }
-	// err = exec.Stream(remotecommand.StreamOptions{
-	// 	Stdin:  stdin,
-	// 	Stdout: stdout,
-	// 	Stderr: stderr,
-	// })
-	// if err != nil {
-	// 	return err
-	// }
+func ExecPodOnce(stdin io.Reader) (string, error) {
+	cmd := "curl localhost"
+	req := GetClient().CoreV1().RESTClient().Post().Resource("pods").Name("demo-0").
+		Namespace("default").SubResource("exec")
+	req.VersionedParams(
+		&v1.PodExecOptions{
+			Container: "web",
+			Command:   strings.Fields(cmd),
+			Stdin:     stdin != nil,
+			Stdout:    true,
+			Stderr:    true,
+			TTY:       false,
+		},
+		scheme.ParameterCodec,
+	)
+	exec, err := remotecommand.NewSPDYExecutor(config, "POST", req.URL())
+	if err != nil {
+		return "", err
+	}
+	var stdout, stderr bytes.Buffer
+	err = exec.Stream(remotecommand.StreamOptions{
+		Stdin:  stdin,
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Tty:    false,
+	})
+	if err != nil {
+		return "", err
+	}
+	return stdout.String() + "\n" + stderr.String(), nil
+}
 
-	// return nil
+func ExecPod(stdin io.Reader, stdout bytes.Buffer, stderr bytes.Buffer) error {
+	cmd := "sh -c clear; (bash || ash || sh)"
+	req := GetClient().CoreV1().RESTClient().Post().Resource("pods").Name("demo-0").
+		Namespace("default").SubResource("exec")
+	req.VersionedParams(
+		&v1.PodExecOptions{
+			Command: strings.Fields(cmd),
+			Stdin:   true,
+			Stdout:  true,
+			Stderr:  true,
+			TTY:     false,
+		},
+		scheme.ParameterCodec,
+	)
+	exec, err := remotecommand.NewSPDYExecutor(config, "POST", req.URL())
+	if err != nil {
+		return err
+	}
+
+	err = exec.Stream(remotecommand.StreamOptions{
+		Stdin:  stdin,
+		Stdout: &stdout,
+		Stderr: &stderr,
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

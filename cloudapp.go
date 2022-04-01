@@ -51,6 +51,8 @@ func main() {
 			g2.POST("/", handler.CreatePod)
 			g2.DELETE("/", handler.DeletePod)
 			g2.GET("/log", handler.LogPod)
+			g2.GET("/exec", handler.ExecPod)
+			g2.GET("/exec2", handler.ExecPodWs)
 		}
 		g3 := cloud.Group("/service")
 		{

@@ -1,0 +1,39 @@
+<!DOCTYPE HTML>
+<html>
+   <head>
+   <meta charset="utf-8">
+   <title>ws</title>
+      <script type="text/javascript">
+         var ws
+         function WebSocketTest() {
+            if ("WebSocket" in window) {
+               ws = new WebSocket("ws://localhost:8080/cloud/pod/exec2");
+               ws.onopen = function() {
+                 ws.send("发送数据");
+               };
+               ws.onmessage = function (evt) { 
+                  var received_msg = evt.data;
+                  console.log(received_msg)
+               };
+               ws.onclose = function() { 
+                  alert("连接已关闭..."); 
+               };
+            }
+            else {
+               alert("您的浏览器不支持 WebSocket!");
+            }
+         }
+
+         function close(){
+            ws.send("close")
+         }
+      </script>
+        
+   </head>
+   <body>
+      <div id="sse">
+         <a href="javascript:WebSocketTest()">运行 WebSocket</a>&nbsp
+         <a href="javascript:close()">发送关闭 </a>
+      </div>
+   </body>
+</html>

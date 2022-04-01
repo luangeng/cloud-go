@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"bytes"
 	model "cloud/model"
 	k8s "cloud/vender/k8s"
 	"context"
@@ -49,13 +50,18 @@ func LogPod(c *gin.Context) {
 	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
 		var message []byte
+		var i = 0
 		for {
 			mt, message, err = ws.ReadMessage()
 			if err != nil {
 				log.Println("read:", err)
 			}
+			i++
 			fmt.Println("read")
-			if string(message) == "close" {
+			if string(message) == "re" {
+				i--
+			}
+			if string(message) == "close" || i > 60 {
 				cancel()
 				break
 			}
@@ -76,5 +82,40 @@ func LogPod(c *gin.Context) {
 }
 
 func ExecPod(c *gin.Context) {
+	msg, err := k8s.ExecPodOnce(nil)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	c.JSON(200, msg)
+}
 
+func ExecPodWs(c *gin.Context) {
+	ws, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	if err != nil {
+		log.Print("upgrade:", err)
+		return
+	}
+	defer ws.Close()
+
+	var stdin bytes.Buffer
+	var stdout, stderr bytes.Buffer
+	go k8s.ExecPod(&stdin, stdout, stderr)
+	// if err != nil {
+	// 	log.Print("err:", err)
+	// }
+	fmt.Println("end of execpod")
+	// ch := make(chan string)
+	// ctx, cancel := context.WithCancel(context.Background())
+	for {
+		mt, msg, err := ws.ReadMessage()
+		fmt.Println(string(msg))
+		stdin.Write(msg)
+		b, _ := stdout.ReadBytes('\n')
+		fmt.Println(b)
+		err = ws.WriteMessage(mt, b)
+		if err != nil {
+			fmt.Printf(err.Error())
+		}
+		time.Sleep(time.Second)
+	}
 }
