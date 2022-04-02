@@ -7,13 +7,11 @@ import (
 )
 
 func ListNs(c *gin.Context) {
-	list := k8s.ListNs()
-	c.JSON(200, list)
+	list, _ := k8s.ListNs()
+	c.JSON(200, Ok(list))
 }
 
 func CreateNs(c *gin.Context) {
 	k8s.CreateNs("name")
-	c.JSON(200, gin.H{
-		"message": "ok",
-	})
+	c.JSON(200, Ok(nil))
 }

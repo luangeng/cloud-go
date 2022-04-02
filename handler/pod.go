@@ -14,7 +14,7 @@ import (
 )
 
 func ListPod(c *gin.Context) {
-	list := k8s.ListPod("default")
+	list, _ := k8s.ListPod("default")
 	c.JSON(200, list)
 }
 

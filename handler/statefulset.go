@@ -7,7 +7,7 @@ import (
 )
 
 func ListStateful(c *gin.Context) {
-	list := k8s.ListStateful("default")
+	list, _ := k8s.ListStateful("default")
 	c.JSON(200, list)
 }
 

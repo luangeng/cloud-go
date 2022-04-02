@@ -9,7 +9,7 @@ import (
 )
 
 func ListPv(c *gin.Context) {
-	var pvcs = pv.ListPv("default")
+	pvcs, _ := pv.ListPv("default")
 	results := []Pv{}
 	for _, value := range pvcs {
 		// fmt.Printf("idx: %d, value: %d\n", idx, value)
@@ -25,7 +25,7 @@ func ListPv(c *gin.Context) {
 }
 
 func ListPvDetail(c *gin.Context) {
-	var z = pv.ListPv("default")
+	z, _ := pv.ListPv("default")
 	c.JSON(200, z)
 }
 

@@ -22,12 +22,12 @@ func CreateDeploy(c *gin.Context) {
 }
 
 func ListDeploy(c *gin.Context) {
-	var list = deploy.ListDeploy("default")
+	list, _ := deploy.ListDeploy("default")
 	c.JSON(200, list)
 }
 
 func ListDeployDetail(c *gin.Context) {
-	var list = deploy.ListDeploy("default")
+	list, _ := deploy.ListDeploy("default")
 	c.JSON(200, list)
 }
 
