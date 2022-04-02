@@ -7,20 +7,28 @@ import (
 )
 
 func ListStateful(c *gin.Context) {
-	list, _ := k8s.ListStateful("default")
-	c.JSON(200, list)
+	list, err := k8s.ListStateful("default")
+	if err != nil {
+		c.JSON(200, Error(err.Error()))
+		return
+	}
+	c.JSON(200, Ok(list))
 }
 
 func CreateStateful(c *gin.Context) {
-	k8s.CreateStateful()
-	c.JSON(200, gin.H{
-		"message": "ok",
-	})
+	err := k8s.CreateStateful()
+	if err != nil {
+		c.JSON(200, Error(err.Error()))
+		return
+	}
+	c.JSON(200, Ok(nil))
 }
 
 func DeleteStateful(c *gin.Context) {
-	k8s.DeleteStateful("default", "demo")
-	c.JSON(200, gin.H{
-		"message": "ok",
-	})
+	err := k8s.DeleteStateful("default", "demo")
+	if err != nil {
+		c.JSON(200, Error(err.Error()))
+		return
+	}
+	c.JSON(200, Ok(nil))
 }

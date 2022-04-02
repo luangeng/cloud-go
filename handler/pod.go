@@ -14,8 +14,12 @@ import (
 )
 
 func ListPod(c *gin.Context) {
-	list, _ := k8s.ListPod("default")
-	c.JSON(200, list)
+	list, err := k8s.ListPod("default")
+	if err != nil {
+		c.JSON(200, Error(err.Error()))
+		return
+	}
+	c.JSON(200, Ok(list))
 }
 
 func CreatePod(c *gin.Context) {
@@ -25,12 +29,20 @@ func CreatePod(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, "bad request")
 		return
 	}
-	k8s.CreatePod(param)
+	err = k8s.CreatePod(param)
+	if err != nil {
+		c.JSON(200, Error(err.Error()))
+		return
+	}
 	c.JSON(200, Ok(nil))
 }
 
 func DeletePod(c *gin.Context) {
-	k8s.DeletePod("default", "test")
+	err := k8s.DeletePod("default", "test")
+	if err != nil {
+		c.JSON(200, Error(err.Error()))
+		return
+	}
 	c.JSON(200, Ok(nil))
 }
 

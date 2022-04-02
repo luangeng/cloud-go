@@ -10,10 +10,12 @@ import (
 
 func ListService(c *gin.Context) {
 	ns := c.Query("namespace")
-	k8s.ListService(ns)
-	c.JSON(200, gin.H{
-		"message": "ok",
-	})
+	list, err := k8s.ListService(ns)
+	if err != nil {
+		c.JSON(200, Error(err.Error()))
+		return
+	}
+	c.JSON(200, Ok(list))
 }
 
 func CreateService(c *gin.Context) {
@@ -23,17 +25,21 @@ func CreateService(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, "bad request")
 		return
 	}
-	k8s.CreateService(param)
-	c.JSON(200, gin.H{
-		"message": "ok",
-	})
+	err = k8s.CreateService(param)
+	if err != nil {
+		c.JSON(200, Error(err.Error()))
+		return
+	}
+	c.JSON(200, Ok(nil))
 }
 
 func DeleteService(c *gin.Context) {
 	ns := c.Query("namespace")
 	name := c.Query("name")
-	k8s.DeleteService(ns, name)
-	c.JSON(200, gin.H{
-		"message": "ok",
-	})
+	err := k8s.DeleteService(ns, name)
+	if err != nil {
+		c.JSON(200, Error(err.Error()))
+		return
+	}
+	c.JSON(200, Ok(nil))
 }
