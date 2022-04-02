@@ -1,16 +1,17 @@
 package handler
 
 import (
-	"bytes"
 	model "cloud/model"
 	k8s "cloud/vender/k8s"
 	"context"
 	"fmt"
 	"log"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 )
 
 func ListPod(c *gin.Context) {
@@ -97,25 +98,56 @@ func ExecPodWs(c *gin.Context) {
 	}
 	defer ws.Close()
 
-	var stdin bytes.Buffer
-	var stdout, stderr bytes.Buffer
-	go k8s.ExecPod(&stdin, stdout, stderr)
-	// if err != nil {
-	// 	log.Print("err:", err)
-	// }
-	fmt.Println("end of execpod")
-	// ch := make(chan string)
-	// ctx, cancel := context.WithCancel(context.Background())
-	for {
-		mt, msg, err := ws.ReadMessage()
-		fmt.Println(string(msg))
-		stdin.Write(msg)
-		b, _ := stdout.ReadBytes('\n')
-		fmt.Println(b)
-		err = ws.WriteMessage(mt, b)
-		if err != nil {
-			fmt.Printf(err.Error())
-		}
-		time.Sleep(time.Second)
+	handler := &WSStreamHandler{conn: ws}
+	handler.cond = sync.NewCond(handler)
+
+	go handler.Run()
+	err = k8s.ExecPod(handler, handler, handler)
+	if err != nil {
+		fmt.Println(err.Error())
 	}
+}
+
+type WSStreamHandler struct {
+	buff []byte
+	cond *sync.Cond
+
+	sync.Mutex
+
+	conn *websocket.Conn
+}
+
+func (h *WSStreamHandler) Run() {
+	for {
+		_, msg, err := h.conn.ReadMessage()
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+		h.Lock()
+		h.buff = append(h.buff, msg...)
+		h.cond.Signal()
+		h.Unlock()
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
+func (h *WSStreamHandler) Read(b []byte) (size int, err error) {
+	h.Lock()
+	for len(h.buff) == 0 {
+		h.cond.Wait()
+	}
+	size = copy(b, h.buff)
+	h.buff = h.buff[size:]
+	h.Unlock()
+	return
+}
+
+func (h *WSStreamHandler) Write(b []byte) (size int, err error) {
+	size = len(b)
+	fmt.Println(string(b))
+	err = h.conn.WriteMessage(websocket.TextMessage, b)
+	return
 }

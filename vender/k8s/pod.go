@@ -173,8 +173,8 @@ func ExecPodOnce(stdin io.Reader) (string, error) {
 	return stdout.String() + "\n" + stderr.String(), nil
 }
 
-func ExecPod(stdin io.Reader, stdout bytes.Buffer, stderr bytes.Buffer) error {
-	cmd := "sh -c clear; (bash || ash || sh)"
+func ExecPod(stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
+	cmd := "bash"
 	req := GetClient().CoreV1().RESTClient().Post().Resource("pods").Name("demo-0").
 		Namespace("default").SubResource("exec")
 	req.VersionedParams(
@@ -183,7 +183,7 @@ func ExecPod(stdin io.Reader, stdout bytes.Buffer, stderr bytes.Buffer) error {
 			Stdin:   true,
 			Stdout:  true,
 			Stderr:  true,
-			TTY:     false,
+			TTY:     true,
 		},
 		scheme.ParameterCodec,
 	)
@@ -194,8 +194,9 @@ func ExecPod(stdin io.Reader, stdout bytes.Buffer, stderr bytes.Buffer) error {
 
 	err = exec.Stream(remotecommand.StreamOptions{
 		Stdin:  stdin,
-		Stdout: &stdout,
-		Stderr: &stderr,
+		Stdout: stdout,
+		Stderr: stderr,
+		Tty:    true,
 	})
 	if err != nil {
 		return err
