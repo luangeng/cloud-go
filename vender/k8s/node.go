@@ -7,10 +7,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func ListNode() *v1.NodeList {
+func ListNode() (*v1.NodeList, error) {
 	list, err := GetClient().CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return list
+	return list, nil
 }

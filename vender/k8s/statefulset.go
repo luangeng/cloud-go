@@ -11,15 +11,15 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func ListStateful(ns string) []v1.StatefulSet {
+func ListStateful(ns string) ([]v1.StatefulSet, error) {
 	list, err := GetClient().AppsV1().StatefulSets(ns).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return list.Items
+	return list.Items, nil
 }
 
-func CreateStateful() {
+func CreateStateful() error {
 	storageClassName := "gluster"
 	var envs []apiv1.EnvVar
 	envs = append(envs, apiv1.EnvVar{Name: "test", Value: "123"})
@@ -93,18 +93,15 @@ func CreateStateful() {
 	}
 
 	result, err := client.Create(context.TODO(), statefulset, metav1.CreateOptions{})
-	if err != nil {
-		panic(err)
-	}
 	fmt.Printf("Created statefulset %q.\n", result.GetObjectMeta().GetName())
+	return err
 }
 
-func DeleteStateful(ns string, name string) {
+func DeleteStateful(ns string, name string) error {
 	client := GetClient().AppsV1().StatefulSets(ns)
 	deletePolicy := metav1.DeletePropagationForeground
-	if err := client.Delete(context.TODO(), name, metav1.DeleteOptions{
+	err := client.Delete(context.TODO(), name, metav1.DeleteOptions{
 		PropagationPolicy: &deletePolicy,
-	}); err != nil {
-		panic(err)
-	}
+	})
+	return err
 }

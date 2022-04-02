@@ -18,13 +18,13 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 )
 
-func ListPod(ns string) []v1.Pod {
+func ListPod(ns string) ([]v1.Pod, error) {
 	pods, err := GetClient().CoreV1().Pods(ns).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		panic(err.Error())
+		return nil, err
 	}
 	fmt.Printf("There are %d pods in the cluster\n", len(pods.Items))
-	return pods.Items
+	return pods.Items, nil
 
 	// Examples for error handling:
 	// - Use helper functions like e.g. errors.IsNotFound()
@@ -94,11 +94,9 @@ func CreatePod(pod0 model.Pod) error {
 	return nil
 }
 
-func DeletePod(ns string, name string) {
+func DeletePod(ns string, name string) error {
 	err := GetClient().CoreV1().Pods(ns).Delete(context.TODO(), name, metav1.DeleteOptions{})
-	if err != nil {
-		panic(err.Error())
-	}
+	return err
 }
 
 func LogPod() string {
