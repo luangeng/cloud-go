@@ -11,12 +11,15 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
 )
 
 func ListPod(c *gin.Context) {
-	list := k8s.ListPod("default")
-	c.JSON(200, list)
+	list, err := k8s.ListPod("default")
+	if err != nil {
+		c.JSON(200, Error(err.Error()))
+		return
+	}
+	c.JSON(200, Ok(list))
 }
 
 func CreatePod(c *gin.Context) {
@@ -26,17 +29,21 @@ func CreatePod(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, "bad request")
 		return
 	}
-	k8s.CreatePod(param)
-	c.JSON(200, gin.H{
-		"message": "ok",
-	})
+	err = k8s.CreatePod(param)
+	if err != nil {
+		c.JSON(200, Error(err.Error()))
+		return
+	}
+	c.JSON(200, Ok(nil))
 }
 
 func DeletePod(c *gin.Context) {
-	k8s.DeletePod("default", "test")
-	c.JSON(200, gin.H{
-		"message": "ok",
-	})
+	err := k8s.DeletePod("default", "test")
+	if err != nil {
+		c.JSON(200, Error(err.Error()))
+		return
+	}
+	c.JSON(200, Ok(nil))
 }
 
 func LogPod(c *gin.Context) {
@@ -98,7 +105,7 @@ func ExecPodWs(c *gin.Context) {
 	}
 	defer ws.Close()
 
-	handler := &WSStreamHandler{conn: ws}
+	handler := &WsStreamer{conn: ws}
 	handler.cond = sync.NewCond(handler)
 
 	go handler.Run()
@@ -106,48 +113,4 @@ func ExecPodWs(c *gin.Context) {
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-}
-
-type WSStreamHandler struct {
-	buff []byte
-	cond *sync.Cond
-
-	sync.Mutex
-
-	conn *websocket.Conn
-}
-
-func (h *WSStreamHandler) Run() {
-	for {
-		_, msg, err := h.conn.ReadMessage()
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
-		h.Lock()
-		h.buff = append(h.buff, msg...)
-		h.cond.Signal()
-		h.Unlock()
-		if err != nil {
-			panic(err)
-		}
-	}
-}
-
-func (h *WSStreamHandler) Read(b []byte) (size int, err error) {
-	h.Lock()
-	for len(h.buff) == 0 {
-		h.cond.Wait()
-	}
-	size = copy(b, h.buff)
-	h.buff = h.buff[size:]
-	h.Unlock()
-	return
-}
-
-func (h *WSStreamHandler) Write(b []byte) (size int, err error) {
-	size = len(b)
-	fmt.Println(string(b))
-	err = h.conn.WriteMessage(websocket.TextMessage, b)
-	return
 }

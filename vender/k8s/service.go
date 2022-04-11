@@ -9,15 +9,15 @@ import (
 	intstr "k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func ListService(ns string) []v1.Service {
+func ListService(ns string) ([]v1.Service, error) {
 	list, err := GetClient().CoreV1().Services(ns).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return list.Items
+	return list.Items, nil
 }
 
-func CreateService(param model.ServiceParam) {
+func CreateService(param model.ServiceParam) error {
 	var ports []v1.ServicePort
 	ports = append(ports, v1.ServicePort{
 		Port:       80,
@@ -39,14 +39,10 @@ func CreateService(param model.ServiceParam) {
 		},
 	}
 	_, err := GetClient().CoreV1().Services(param.Namespace).Create(context.TODO(), service, metav1.CreateOptions{})
-	if err != nil {
-		panic(err)
-	}
+	return err
 }
 
-func DeleteService(namespace string, name string) {
+func DeleteService(namespace string, name string) error {
 	err := GetClient().CoreV1().Services(namespace).Delete(context.TODO(), name, metav1.DeleteOptions{})
-	if err != nil {
-		panic(err)
-	}
+	return err
 }

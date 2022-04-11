@@ -11,7 +11,7 @@ import (
 	"k8s.io/client-go/util/retry"
 )
 
-func CreateDeploy(d model.Deploy1) {
+func CreateDeploy(d model.Deploy1) error {
 	var containers []apiv1.Container
 	for _, c := range d.Containers {
 
@@ -86,48 +86,42 @@ func CreateDeploy(d model.Deploy1) {
 		},
 	}
 
-	result, err := deploymentsClient.Create(context.TODO(), deployment, metav1.CreateOptions{})
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("Created deployment %q.\n", result.GetObjectMeta().GetName())
+	_, err := deploymentsClient.Create(context.TODO(), deployment, metav1.CreateOptions{})
+	return err
 }
 
-func ListDeploy(ns string) []appsv1.Deployment {
+func ListDeploy(ns string) ([]appsv1.Deployment, error) {
 	deploymentsClient := GetClient().AppsV1().Deployments(ns)
 	list, err := deploymentsClient.List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return list.Items
+	return list.Items, nil
 }
 
-func DeleteDeploy(ns string, name string) {
+func DeleteDeploy(ns string, name string) error {
 	deploymentsClient := GetClient().AppsV1().Deployments(ns)
 	deletePolicy := metav1.DeletePropagationForeground
-	if err := deploymentsClient.Delete(context.TODO(), name, metav1.DeleteOptions{
+	err := deploymentsClient.Delete(context.TODO(), name, metav1.DeleteOptions{
 		PropagationPolicy: &deletePolicy,
-	}); err != nil {
-		panic(err)
-	}
+	})
+	return err
 }
 
-func UpdateDeploy() {
+func UpdateDeploy() error {
 	deploymentsClient := GetClient().AppsV1().Deployments(apiv1.NamespaceDefault)
 	fmt.Println("Updating deployment...")
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		result, getErr := deploymentsClient.Get(context.TODO(), "demo-deployment", metav1.GetOptions{})
 		if getErr != nil {
-			panic(fmt.Errorf("Failed to get latest version of Deployment: %v", getErr))
+			fmt.Errorf("Failed to get latest version of Deployment: %v", getErr)
 		}
 
 		result.Spec.Replicas = int32Ptr(1)
 		_, updateErr := deploymentsClient.Update(context.TODO(), result, metav1.UpdateOptions{})
 		return updateErr
 	})
-	if retryErr != nil {
-		panic(fmt.Errorf("Update failed: %v", retryErr))
-	}
+	return retryErr
 }
 
 func int32Ptr(i int32) *int32 { return &i }

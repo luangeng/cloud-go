@@ -9,7 +9,11 @@ import (
 )
 
 func ListPv(c *gin.Context) {
-	var pvcs = pv.ListPv("default")
+	pvcs, err := pv.ListPv("default")
+	if err != nil {
+		c.JSON(200, Error(err.Error()))
+		return
+	}
 	results := []Pv{}
 	for _, value := range pvcs {
 		// fmt.Printf("idx: %d, value: %d\n", idx, value)
@@ -21,12 +25,16 @@ func ListPv(c *gin.Context) {
 		pv.Status = string(value.Status.Phase)
 		results = append(results, *pv)
 	}
-	c.JSON(200, results)
+	c.JSON(200, Ok(results))
 }
 
 func ListPvDetail(c *gin.Context) {
-	var z = pv.ListPv("default")
-	c.JSON(200, z)
+	list, err := pv.ListPv("default")
+	if err != nil {
+		c.JSON(200, Error(err.Error()))
+		return
+	}
+	c.JSON(200, Ok(list))
 }
 
 func CreatePvc(c *gin.Context) {
@@ -36,10 +44,12 @@ func CreatePvc(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, "bad request")
 		return
 	}
-	pv.CreatePvc(param)
-	c.JSON(200, gin.H{
-		"message": "ok",
-	})
+	err = pv.CreatePvc(param)
+	if err != nil {
+		c.JSON(200, Error(err.Error()))
+		return
+	}
+	c.JSON(200, Ok(nil))
 }
 
 func DeletePvc(c *gin.Context) {
@@ -49,8 +59,6 @@ func DeletePvc(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, "bad request")
 		return
 	}
-	pv.DeletePvc(param)
-	c.JSON(200, gin.H{
-		"message": "ok",
-	})
+	err = pv.DeletePvc(param)
+	c.JSON(200, Ok(err))
 }

@@ -34,6 +34,7 @@ func main() {
 	cloud := r.Group("/cloud")
 	{
 		cloud.GET("/ws", handler.WebSocket)
+		cloud.POST("/upload", handler.Uplaod)
 
 		g1 := cloud.Group("/node")
 		{

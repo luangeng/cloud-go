@@ -7,16 +7,16 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func ListNs() []v1.Namespace {
+func ListNs() ([]v1.Namespace, error) {
 	api := clientset.CoreV1()
 	list, err := api.Namespaces().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return list.Items
+	return list.Items, nil
 }
 
-func CreateNs(name string) {
+func CreateNs(name string) error {
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
@@ -24,7 +24,5 @@ func CreateNs(name string) {
 	}
 	api := clientset.CoreV1()
 	_, err := api.Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
-	if err != nil {
-		panic(err)
-	}
+	return err
 }

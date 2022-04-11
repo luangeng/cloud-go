@@ -28,3 +28,10 @@ func Ok(data interface{}) Response {
 func Error(msg string) Response {
 	return Response{Code: ERROR, Message: msg, Data: nil}
 }
+
+func Simple(err error) Response {
+	if err == nil {
+		return Response{Code: OK, Message: "ok"}
+	}
+	return Response{Code: ERROR, Message: err.Error(), Data: nil}
+}

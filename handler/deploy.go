@@ -16,26 +16,34 @@ func CreateDeploy(c *gin.Context) {
 		return
 	}
 	deploy.CreateDeploy(param)
-	c.JSON(200, gin.H{
-		"message": "ok",
-	})
+	c.JSON(200, Ok(nil))
 }
 
 func ListDeploy(c *gin.Context) {
-	var list = deploy.ListDeploy("default")
-	c.JSON(200, list)
+	list, err := deploy.ListDeploy("default")
+	if err != nil {
+		c.JSON(200, Error(err.Error()))
+		return
+	}
+	c.JSON(200, Ok(list))
 }
 
 func ListDeployDetail(c *gin.Context) {
-	var list = deploy.ListDeploy("default")
-	c.JSON(200, list)
+	list, err := deploy.ListDeploy("default")
+	if err != nil {
+		c.JSON(200, Error(err.Error()))
+		return
+	}
+	c.JSON(200, Ok(list))
 }
 
 func DeleteDeploy(c *gin.Context) {
 	ns := c.Query("namespace")
 	name := c.Query("name")
-	deploy.DeleteDeploy(ns, name)
-	c.JSON(200, gin.H{
-		"message": "ok",
-	})
+	err := deploy.DeleteDeploy(ns, name)
+	if err != nil {
+		c.JSON(200, Error(err.Error()))
+		return
+	}
+	c.JSON(200, Ok(nil))
 }

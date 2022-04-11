@@ -7,13 +7,19 @@ import (
 )
 
 func ListNs(c *gin.Context) {
-	list := k8s.ListNs()
-	c.JSON(200, list)
+	list, err := k8s.ListNs()
+	if err != nil {
+		c.JSON(200, Error(err.Error()))
+		return
+	}
+	c.JSON(200, Ok(list))
 }
 
 func CreateNs(c *gin.Context) {
-	k8s.CreateNs("name")
-	c.JSON(200, gin.H{
-		"message": "ok",
-	})
+	err := k8s.CreateNs("name")
+	if err != nil {
+		c.JSON(200, Error(err.Error()))
+		return
+	}
+	c.JSON(200, Ok(nil))
 }

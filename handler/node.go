@@ -9,7 +9,7 @@ import (
 )
 
 func ListNode(c *gin.Context) {
-	var list = node.ListNode()
+	list, _ := node.ListNode()
 	results := []Node{}
 	for _, v := range list.Items {
 		node := new(Node)
@@ -20,6 +20,10 @@ func ListNode(c *gin.Context) {
 }
 
 func ListNodeDetail(c *gin.Context) {
-	var z = node.ListNode()
-	c.JSON(200, z)
+	list, err := node.ListNode()
+	if err != nil {
+		c.JSON(200, Error(err.Error()))
+		return
+	}
+	c.JSON(200, Ok(list))
 }
