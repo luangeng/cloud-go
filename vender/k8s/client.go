@@ -23,10 +23,14 @@ func GetConfig() *rest.Config {
 
 func Init() {
 	str, _ := os.Getwd()
-	kubeconfig := filepath.Join(str, "config", "cluster.yaml")
-	log.Println(kubeconfig)
+	configpath := filepath.Join(str, "config", "cluster.yaml")
+	log.Println(configpath)
 	var err error
-	config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
+	if IsPathExists(configpath) {
+		config, err = clientcmd.BuildConfigFromFlags("", configpath)
+	} else {
+		config, err = clientcmd.BuildConfigFromFlags("", "")
+	}
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -35,4 +39,16 @@ func Init() {
 		log.Fatal(err)
 	}
 
+}
+
+func IsPathExists(path string) bool {
+	_, err := os.Lstat(path)
+	if err == nil {
+		return true
+	}
+	if os.IsNotExist(err) {
+		return false
+	}
+	// error other than not existing e.g. permission denied
+	return false
 }

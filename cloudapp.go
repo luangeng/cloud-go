@@ -93,6 +93,6 @@ func main() {
 
 	r.Static("/web", "web")
 
-	r.Run()
+	r.Run(":80")
 
 }
