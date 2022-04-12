@@ -61,7 +61,7 @@ func runLeaderElection(lock *resourcelock.LeaseLock, ctx context.Context, cancel
 }
 
 func TestLock() {
-	podName := os.Getenv("POD_NAME")
+	podName := os.Getenv("HostName")
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
