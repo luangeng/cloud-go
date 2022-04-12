@@ -26,18 +26,14 @@ func getNewLock(lockname, podname, namespace string) *resourcelock.LeaseLock {
 }
 
 func doStuff() {
-	var i = 0
 	for {
-		fmt.Printf("doing stuff...%d\n", i)
-		i++
-		time.Sleep(3 * time.Second)
-		if i > 10 {
-			return
-		}
+		fmt.Printf("I am the leader with lock\n")
+		time.Sleep(4 * time.Second)
 	}
 }
 
-func runLeaderElection(lock *resourcelock.LeaseLock, ctx context.Context, id string) {
+func runLeaderElection(lock *resourcelock.LeaseLock, ctx context.Context, cancel context.CancelFunc, id string) {
+	fmt.Printf("runLeaderElection\n")
 	leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
 		Lock:            lock,
 		ReleaseOnCancel: true,
@@ -46,7 +42,9 @@ func runLeaderElection(lock *resourcelock.LeaseLock, ctx context.Context, id str
 		RetryPeriod:     2 * time.Second,
 		Callbacks: leaderelection.LeaderCallbacks{
 			OnStartedLeading: func(c context.Context) {
+				fmt.Printf("leader gets lock\n")
 				doStuff()
+				cancel()
 			},
 			OnStoppedLeading: func() {
 				klog.Info("no longer the leader, staying inactive.")
@@ -56,7 +54,7 @@ func runLeaderElection(lock *resourcelock.LeaseLock, ctx context.Context, id str
 					klog.Info("still the leader!")
 					return
 				}
-				klog.Info("new leader is %s", current_id)
+				klog.Info("leader changed, new leader is %s", current_id)
 			},
 		},
 	})
@@ -69,5 +67,5 @@ func TestLock() {
 	defer cancel()
 
 	lock := getNewLock("mylock", podName, "default")
-	runLeaderElection(lock, ctx, podName)
+	runLeaderElection(lock, ctx, cancel, podName)
 }

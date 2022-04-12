@@ -8,7 +8,7 @@ import (
 
 func Test(c *gin.Context) {
 
-	k8s.TestLock()
+	go k8s.TestLock()
 
 	c.JSON(200, gin.H{
 		"message": "ok",
