@@ -42,12 +42,12 @@ spec:
     metadata:
       labels:
         app: cloud
-    serviceAccountName: cloud
     spec:
       tolerations:
         - key: node-role.kubernetes.io/master
           effect: NoSchedule
-        nodeName: "u1"
+      nodeName: "u1"
+      serviceAccount: cloud
       containers:
       - name: cloud
         image: luangeng/cloud
