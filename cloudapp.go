@@ -5,6 +5,7 @@ import (
 
 	handler "cloud/handler"
 
+	"cloud/vender/k8s"
 	client "cloud/vender/k8s"
 
 	"github.com/gin-gonic/gin"
@@ -92,6 +93,8 @@ func main() {
 	})
 
 	r.Static("/web", "web")
+
+	go k8s.TestLock()
 
 	r.Run(":80")
 
