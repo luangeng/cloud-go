@@ -14,7 +14,7 @@ COPY vender ./vender/
 COPY web ./web/
 
 # Download go modules
-ENV GOPROXY="https://proxy.golang.com.cn,direct"
+# ENV GOPROXY="https://proxy.golang.com.cn,direct"
 ENV GO111MODULE=on
 
 RUN go mod download
