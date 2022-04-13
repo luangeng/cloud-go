@@ -26,10 +26,12 @@ func getNewLock(lockname, podname, namespace string) *resourcelock.LeaseLock {
 }
 
 func doStuff() {
-	for {
-		fmt.Printf("I am the leader with lock\n")
-		time.Sleep(4 * time.Second)
-	}
+	// for {
+	// 	fmt.Printf("I am the leader with lock\n")
+	// 	time.Sleep(4 * time.Second)
+	// }
+	WatchEvents()
+	PodNumOfSpecifyNode()
 }
 
 func runLeaderElection(lock *resourcelock.LeaseLock, ctx context.Context, cancel context.CancelFunc, id string) {
@@ -61,7 +63,8 @@ func runLeaderElection(lock *resourcelock.LeaseLock, ctx context.Context, cancel
 }
 
 func TestLock() {
-	podName := os.Getenv("HostName")
+	podName, _ := os.Hostname()
+	fmt.Println("podName:" + podName)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
